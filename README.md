@@ -5,5 +5,6 @@
 ![Issues](https://img.shields.io/github/issues/linkmeta/MetaCom?color=blue&style=flat-square)
 ![release](https://img.shields.io/github/release/linkmeta/MetaCom.svg)
 
-![MetaCom](docs/MetaCom.png){height="648" width="582"}
-![About](docs/about.png)
+<img src="https://github.com/linkmeta/MetaCom/blob/main/docs/MetaCom.png" width="700">
+<img src="https://github.com/linkmeta/MetaCom/blob/main/docs/about.png" width="500">
+
