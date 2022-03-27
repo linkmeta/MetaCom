@@ -50,5 +50,5 @@ $ cd MetaCom
 
 ## License
 
-软件采用 MIT License 授权（[License MIT](../LICENSE)）。
+软件采用 MIT License 授权（[License MIT](./LICENSE)）。
 
