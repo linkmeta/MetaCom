@@ -486,7 +486,7 @@ namespace MetaCom.ViewModels
 
             try
             {
-                SerialPortBase.PortName = SerialPortModel.Port;
+                SerialPortBase.PortName = SerialPortModel.Port.Split(' ')[0];//只获取端口号，去除端口描述信息
                 SerialPortBase.BaudRate = SerialPortModel.BaudRate;
                 SerialPortBase.DataBits = SerialPortModel.DataBits;
                 SerialPortBase.StopBits = SerialPortModel.StopBits;

@@ -1,6 +1,9 @@
 ﻿using MetaCom.ViewModels;
+using System;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
+using System.Management;
+using System.Windows;
 using System.Windows.Media;
 
 namespace MetaCom.Models
@@ -583,9 +586,36 @@ namespace MetaCom.Models
         }
         #endregion
 
+        public string GetPortInformation( String PortName )
+        {
+            ManagementClass processClass = new ManagementClass("Win32_PnPEntity");
+            ManagementObjectCollection Ports = processClass.GetInstances();
+            foreach (ManagementObject property in Ports)
+            {
+                var name = property.GetPropertyValue("Name");
+                if (name != null && name.ToString().Contains(PortName))
+                {
+                    Console.WriteLine("Port Name:    " + name);
+                    Console.WriteLine("Port description:    " + property.GetPropertyValue("Description"));
+                    return property.GetPropertyValue("Description").ToString();
+                    //Thats all information i got from port.
+                    //Do whatever you want with this information
+                }
+            }
+            return string.Empty;
+        }
+
         public void SerialPortDataContext()
         {
             PortItemsSource = SerialPort.GetPortNames();
+            int i = 0;
+            foreach (var port in PortItemsSource)
+            {
+                String PortDesc = GetPortInformation(port.ToString());
+                PortItemsSource[i] = PortItemsSource[i] + " " + PortDesc;
+                i++;
+            }
+            
             BaudRateItemsSource = new Collection<int>
             {
                 1200, 2400, 4800, 7200, 9600, 14400, 19200, 28800, 38400, 57600, 115200, 128000, 153600, 230400, 256000
@@ -604,7 +634,7 @@ namespace MetaCom.Models
             };
 
             //RecvBufSize = 2;
-            Port = string.Format(CultureInfos, "COM1");
+            Port = string.Format(CultureInfos, "COM1 通信端口");
             BaudRate = 115200;
             DataBits = 8;
             StopBits = StopBits.One;
