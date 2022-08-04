@@ -32,68 +32,10 @@ namespace MetaCom.Models
                 }
             }
         }
-
-        #region 状态栏 - 发送文件进度条可见性
-        private string _StatusBarProgressBarVisibility;
-        public string StatusBarProgressBarVisibility
-        {
-            get
-            {
-                return _StatusBarProgressBarVisibility;
-            }
-            set
-            {
-                if (_StatusBarProgressBarVisibility != value)
-                {
-                    _StatusBarProgressBarVisibility = value;
-                    RaisePropertyChanged(nameof(StatusBarProgressBarVisibility));
-                }
-            }
-        }
-
-        private double _StatusBarProgressBarValue;
-        public double StatusBarProgressBarValue
-        {
-            get
-            {
-                return _StatusBarProgressBarValue;
-            }
-            set
-            {
-                if (_StatusBarProgressBarValue != value)
-                {
-                    _StatusBarProgressBarValue = value;
-                    RaisePropertyChanged(nameof(StatusBarProgressBarValue));
-                }
-            }
-        }
-
-        private bool _StatusBarProgressBarIsIndeterminate;
-        public bool StatusBarProgressBarIsIndeterminate
-        {
-            get
-            {
-                return _StatusBarProgressBarIsIndeterminate;
-            }
-            set
-            {
-                if (_StatusBarProgressBarIsIndeterminate != value)
-                {
-                    _StatusBarProgressBarIsIndeterminate = value;
-                    RaisePropertyChanged(nameof(StatusBarProgressBarIsIndeterminate));
-                }
-            }
-        }
-        #endregion
-
         public void HelpDataContext()
         {
-            VerInfoNumber = "1.2.0";
+            VerInfoNumber = "1.3.0";
             VerInfo = "MetaCom V" + VerInfoNumber;
-
-            StatusBarProgressBarVisibility = "Collapsed";
-            StatusBarProgressBarValue = 0;
-            StatusBarProgressBarIsIndeterminate = false;
         }
     }
 }

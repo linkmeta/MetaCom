@@ -1,7 +1,9 @@
 ﻿using MetaCom.Models;
 using MetaCom.Views;
+using System.ComponentModel;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.IO.Ports;
@@ -12,6 +14,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Xml.Serialization;
+using System.Xml;
+using static MetaCom.Models.ConfigModel;
 
 namespace MetaCom.ViewModels
 {
@@ -36,6 +41,8 @@ namespace MetaCom.ViewModels
         public RecvModel RecvModel { get; set; }
         public TimerModel TimerModel { get; set; }
         public HelpModel HelpModel { get; set; }
+
+        public ConfigModel ConfigModel { get; set; }
 
         #region 文件保存路径
         private string _SavePathInfo;
@@ -492,6 +499,8 @@ namespace MetaCom.ViewModels
                 SerialPortBase.StopBits = SerialPortModel.StopBits;
                 SerialPortBase.Parity = SerialPortModel.Parity;
 
+                ConfigModel.Port = SerialPortModel.Port;
+
                 /* 字节编码 */
                 if (SerialPortModel.ASCIIEnable)
                 {
@@ -784,6 +793,8 @@ namespace MetaCom.ViewModels
                 }
             }
         }
+
+        //public object CmdDataList { get; private set; }
         #endregion
 
         #region 自动发送定时器实现
@@ -1027,7 +1038,7 @@ namespace MetaCom.ViewModels
                         return;
                     }
 
-                    HelpModel.StatusBarProgressBarVisibility = "Visible";
+                    SendModel.StatusBarProgressBarVisibility = "Visible";
 
                     var fileStream = SendDataOpenFileDialog.OpenFile();
 
@@ -1037,18 +1048,18 @@ namespace MetaCom.ViewModels
                         var SendCount = SerialPortBase.Encoding.GetByteCount(fileContent);
 
                         DebugInfo = string.Format(CultureInfos, "文件正在发送......");
-                        HelpModel.StatusBarProgressBarIsIndeterminate = true;
+                        SendModel.StatusBarProgressBarIsIndeterminate = true;
 
                         await SerialPortBase.BaseStream.WriteAsync(SerialPortBase.Encoding.GetBytes(fileContent), 0, SendCount)
                             .ConfigureAwait(false);
 
-                        HelpModel.StatusBarProgressBarIsIndeterminate = false;
+                        SendModel.StatusBarProgressBarIsIndeterminate = false;
                         DebugInfo = string.Format(CultureInfos, "文件发送完毕");
 
                         SendModel.SendDataCount += SendCount;
                     }
 
-                    HelpModel.StatusBarProgressBarVisibility = "Collapsed";
+                    SendModel.StatusBarProgressBarVisibility = "Collapsed";
                 }
             }
             catch (ArgumentException e)
@@ -1128,6 +1139,8 @@ namespace MetaCom.ViewModels
             SendModel.SendDataCount = 0;
         }
         #endregion
+
+
 
         #region 数据接收事件实现
         private void SerialPortDataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -1343,7 +1356,145 @@ namespace MetaCom.ViewModels
             }
         }
         #endregion
+        internal void SendCmd(string text)
+        {
+            if (text != null)
+            {
+                //System.Windows.MessageBox.Show(cmd.CmdStr);
+                SendModel.SendData = text;
+                SendAsync();
+            }
+        }
+        internal void SaveCommonCmd(string cmd)
+        {
+            try
+            {
+                if (ConfigModel.CommonCmds == null)
+                {
+                    ConfigModel.CommonCmds = new System.Collections.ObjectModel.ObservableCollection<CommonCmd>();
+                }
 
+                ThreadPool.QueueUserWorkItem(delegate
+                {
+                    SynchronizationContext.SetSynchronizationContext(new
+                        DispatcherSynchronizationContext(System.Windows.Application.Current.Dispatcher));
+                    SynchronizationContext.Current.Post(pl =>
+                    {
+                        ConfigModel.CommonCmds.Add(new CommonCmd() { Item = cmd });
+                    }, null);
+                });
+            }
+            catch (Exception e)
+            {
+                DebugInfo = e.Message.Replace("\r\n", "");
+            }
+        }
+
+        internal void SaveRescentCmd(string cmd)
+        {
+            try
+            {
+                if (ConfigModel.RescentCmds == null)
+                {
+                    ConfigModel.RescentCmds = new System.Collections.ObjectModel.ObservableCollection<RescentCmd>();
+                }
+                ThreadPool.QueueUserWorkItem(delegate
+                {
+                    SynchronizationContext.SetSynchronizationContext(new
+                        DispatcherSynchronizationContext(System.Windows.Application.Current.Dispatcher));
+                    SynchronizationContext.Current.Post(pl =>
+                    {
+                        ConfigModel.RescentCmds.Add(new RescentCmd() { Item = cmd });
+                    }, null);
+                });
+            }
+            catch (Exception e)
+            {
+                DebugInfo = e.Message.Replace("\r\n", "");
+            }
+        }
+        public string _fileName = "metacom.cfg";
+        public string _configFilePath = "metacom.cfg";
+
+        public void CheckCfgFile()
+        {
+            try
+            {
+                string exePath = System.AppDomain.CurrentDomain.BaseDirectory;
+                _configFilePath = exePath + _fileName;
+                if (!System.IO.File.Exists(_configFilePath))//查看文件是否存在
+                {
+                    SaveConfig();
+                    
+                    DebugInfo = string.Format(CultureInfos, "配置文件创建成功!");
+                }
+            }
+            catch (Exception e)
+            {
+                DebugInfo = e.Message.Replace("\r\n", "");
+            }
+        }
+            public void LoadConfig()
+        {
+            try
+            {
+                CheckCfgFile();
+                using (FileStream fs = File.OpenRead(_configFilePath))
+                {
+                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(ConfigModel));
+                    ConfigModel = xmlSerializer.Deserialize(fs) as ConfigModel;
+                    
+                    //Get Serial config from file.
+                    if (ConfigModel.Port != null)
+                        SerialPortModel.Port = ConfigModel.Port;
+                    fs.Close();
+                }
+            }
+            catch (Exception e)
+            {
+                DebugInfo = e.Message.Replace("\r\n", "");
+            }
+        }
+        public void SaveConfig()
+        {
+            try
+            {
+                string xmlFilePath = _configFilePath;
+                if (!string.IsNullOrEmpty(xmlFilePath))
+                {
+                    XmlWriterSettings settings = new XmlWriterSettings()
+                    {
+                        Encoding = Encoding.UTF8,
+                        OmitXmlDeclaration = true,
+                        NewLineOnAttributes = true,
+                        Indent = true,
+                        ConformanceLevel = ConformanceLevel.Document
+                    };
+
+                    XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
+                    ns.Add("", "");
+
+                    using (FileStream fs = new FileStream(xmlFilePath, FileMode.Create))
+                    using (var writer = XmlWriter.Create(fs, settings))
+                    {
+                        writer.WriteRaw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n");
+
+                        XmlSerializer xmlSerializer = new XmlSerializer(typeof(ConfigModel));
+                        xmlSerializer.Serialize(writer, ConfigModel, ns);
+                        DebugInfo = string.Format(CultureInfos, "配置保存成功!");
+                        fs.Close();
+                    }
+                }
+                else
+                {
+                    DebugInfo = string.Format(CultureInfos, "配置文件路径保存失败!");
+                }
+            }
+            catch (Exception e)
+            {
+                DebugInfo = e.Message.Replace("\r\n", "");
+            }
+        }
         public MainWindowViewModel()
         {
             SerialPortModel = new SerialPortModel();
@@ -1361,6 +1512,10 @@ namespace MetaCom.ViewModels
             HelpModel = new HelpModel();
             HelpModel.HelpDataContext();
 
+            ConfigModel = new ConfigModel();
+
+            LoadConfig();
+
             SaveRecv = false;
             HexSend = false;
             AutoSend = false;
@@ -1375,6 +1530,8 @@ namespace MetaCom.ViewModels
                 SerialPortBase.DataBits.ToString(CultureInfos),
                 SerialPortBase.StopBits.ToString(),
                 SerialPortBase.Parity.ToString());
+            
+
         }
 
         #region IDisposable Support

@@ -17,6 +17,14 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <ContextMenu x:Key="RescentCmdContextMenu">
+            <MenuItem Header="添加到常用命令" Click="AddToCommonCmdList"></MenuItem>
+            <MenuItem Header="清除最近命令" Click="DelAllCmdList"></MenuItem>
+            <MenuItem Header="删除" Click="DelFromHistoryCmdList"></MenuItem>
+        </ContextMenu>
+        <ContextMenu x:Key="CommandCmdContextMenu">
+            <MenuItem Header="删除" Click="DelFromCommonCmdList"></MenuItem>
+        </ContextMenu>
     </Window.Resources>
 
     <!--Root-->
@@ -26,7 +34,6 @@
         <Grid x:Name="MenuGrid" DockPanel.Dock="Top" WindowChrome.IsHitTestVisibleInChrome="True" MouseMove="MouseMove_Click" Margin="6,6,6,6">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <!--<RowDefinition Height="32.52"/>-->
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
@@ -47,7 +54,7 @@
                 <TextBlock x:Name="NameStr" Text="串口调试工具" Grid.Column="2"
                     Margin="10,0,0,0"
                     Style="{StaticResource ConfigTextBlock}"/>
-                
+
                 <Button x:Name="MinButton" Grid.Column="3"
                     Style="{StaticResource MainButton}"
                     Click="MinButton_Click">
@@ -148,8 +155,6 @@
                                   Click="RequestToSendXOnXOffMenuItem_Click"/>
                         </MenuItem>
                         <Separator/>
-                        <!--<MenuItem x:Name="TimeStampMenuItem" Header="时间戳" IsChecked="{Binding TimerModel.TimeStampEnable}"
-                              Click="TimeStampMenuItem_Click"/>-->
                         <MenuItem x:Name="LineMenuItem" Header="发送换行">
                             <MenuItem x:Name="NonesMenuItem" Header="None" IsChecked="{Binding SendModel.NonesEnable}"
                                   Click="NonesMenuItem_Click"/>
@@ -160,6 +165,8 @@
                             <MenuItem x:Name="CrLfMenuItem" Header="CR LF" IsChecked="{Binding SendModel.CrLfEnable}"
                                   Click="CrLfMenuItem_Click"/>
                         </MenuItem>
+                        <MenuItem x:Name="RstStaticsMenuItem" Header="计数清零"
+                              Click="ClearCount"/>
                     </MenuItem>
 
                     <MenuItem x:Name="HelpMenuItem" Header="帮助(_H)" Style="{StaticResource MainMenuItem}">
@@ -175,7 +182,7 @@
                     </MenuItem>
                 </Menu>
             </Grid>
- 
+
         </Grid>
 
         <!--状态栏-->
@@ -185,103 +192,97 @@
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="2"/>
                 <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="2"/>
                 <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="2"/>
                 <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="2"/>
                 <ColumnDefinition Width="3*"/>
             </Grid.ColumnDefinitions>
             <!--接收状态信息-->
             <Grid Grid.Column="0" UseLayoutRounding="True">
-                <Border BorderBrush="Gainsboro" BorderThickness="0,0,2,2">
-                    <Border BorderBrush="Gray" BorderThickness="2,2,0,0" VerticalAlignment="Center" Padding="5,0,0,2">
-                        <StatusBar x:Name="RecvStatus"  Background="#f0f0f0" HorizontalAlignment="Left">
-                            <StatusBarItem  Style="{StaticResource SBStatusBarItem}">
-                                <StatusBarItem.Content>
-                                    <TextBlock FontSize="10.5">
-                                        <TextBlock.Text>
-                                            <MultiBinding StringFormat="R[{0}] [{1}] [{2}]">
-                                                <Binding Path="RecvModel.RecvDataCount"/>
-                                                <Binding Path="RecvModel.RecvEnable"/>
-                                                <Binding Path="RecvModel.RecvAutoSave"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </StatusBarItem.Content>
-                            </StatusBarItem>
-                        </StatusBar>
-                    </Border>
-                </Border>
+                <StatusBar x:Name="RecvStatus" HorizontalAlignment="Left">
+                    <StatusBarItem  Style="{StaticResource SBStatusBarItem}">
+                        <StatusBarItem.Content>
+                            <TextBlock FontSize="10.5">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="R[{0}] [{1}] [{2}]">
+                                        <Binding Path="RecvModel.RecvDataCount"/>
+                                        <Binding Path="RecvModel.RecvEnable"/>
+                                        <Binding Path="RecvModel.RecvAutoSave"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StatusBarItem.Content>
+                    </StatusBarItem>
+                </StatusBar>
+            </Grid>
+            <Grid Grid.Column="1">
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,5,0,5" BorderBrush="Gray" BorderThickness="1"/>
             </Grid>
             <!--发送状态信息-->
-            <Grid Grid.Column="1">
-                <Border BorderBrush="Gainsboro" BorderThickness="0,0,2,2">
-                    <Border BorderBrush="Gray" BorderThickness="2,2,0,0" VerticalAlignment="Center" Padding="0,0,0,2">
-                        <StatusBar x:Name="SendStatus"  Background="#f0f0f0" HorizontalAlignment="Left">
-                            <StatusBarItem  Style="{StaticResource SBStatusBarItem}">
-                                <StatusBarItem.Content>
-                                    <TextBlock FontSize="10.5">
-                                        <TextBlock.Text>
-                                            <MultiBinding StringFormat="S[{0}]">
-                                                <Binding Path="SendModel.SendDataCount"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </StatusBarItem.Content>
-                            </StatusBarItem>
-                        </StatusBar>
-                    </Border>
-                </Border>
-
+            <Grid Grid.Column="2">
+                <StatusBar x:Name="SendStatus" HorizontalAlignment="Left">
+                    <StatusBarItem  Style="{StaticResource SBStatusBarItem}">
+                        <StatusBarItem.Content>
+                            <TextBlock FontSize="10.5">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="S[{0}]">
+                                        <Binding Path="SendModel.SendDataCount"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StatusBarItem.Content>
+                    </StatusBarItem>
+                </StatusBar>
+            </Grid>
+            <Grid Grid.Column="3">
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,5" BorderBrush="Gray" BorderThickness="1"/>
             </Grid>
             <!--串口状态信息-->
-            <Grid Grid.Column="2">
-                <Border BorderBrush="Gainsboro" BorderThickness="0,0,2,2">
-                    <Border BorderBrush="Gray" BorderThickness="2,2,0,0" VerticalAlignment="Center" Padding="0,0,0,2">
-                        <StatusBar x:Name="SerialStatus"  Background="#f0f0f0" HorizontalAlignment="Left" FontSize="10.5">
-                            <StatusBarItem x:Name="SeiralStatusBraItem" Content="{Binding SerialInfo}"
+            <Grid Grid.Column="4">
+                <StatusBar x:Name="SerialStatus" HorizontalAlignment="Left" FontSize="10.5">
+                    <StatusBarItem x:Name="SeiralStatusBraItem" Content="{Binding SerialInfo}"
                                Style="{StaticResource SBStatusBarItem}"/>
-                        </StatusBar>
-                    </Border>
-                </Border>
+                </StatusBar>
+            </Grid>
+            <Grid Grid.Column="5">
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,5" BorderBrush="Gray" BorderThickness="1"/>
             </Grid>
             <!--系统时间-->
-            <Grid Grid.Column="3">
-                <Border BorderBrush="Gainsboro" BorderThickness="0,0,2,2">
-                    <Border BorderBrush="Gray" BorderThickness="2,2,0,0" VerticalAlignment="Center" Padding="0,0,0,2">
-                        <StatusBar x:Name="TimeStatus"  Background="#f0f0f0" HorizontalAlignment="Left">
-                            <StatusBarItem x:Name="TimeStatusBraItem" Content="{Binding TimerModel.SystemTime}"
+            <Grid Grid.Column="6">
+                <StatusBar x:Name="TimeStatus" HorizontalAlignment="Left">
+                    <StatusBarItem x:Name="TimeStatusBraItem" Content="{Binding TimerModel.SystemTime}"
                                    Style="{StaticResource SBStatusBarItem}" FontSize="10.5"/>
-                        </StatusBar>
-                    </Border>
-                </Border>
+                </StatusBar>
+            </Grid>
+            <Grid Grid.Column="7">
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,5" BorderBrush="Gray" BorderThickness="1"/>
             </Grid>
             <!--状态提示-->
-            <Grid Grid.Column="4">
-                <Border BorderBrush="Gainsboro" BorderThickness="0,0,2,2">
-                    <Border BorderBrush="Gray" BorderThickness="2,2,0,0" VerticalAlignment="Center" Padding="0,0,0,2">
-                        <StatusBar x:Name="InfoStatus"  Background="#f0f0f0" HorizontalAlignment="Left">
-                            <StatusBarItem x:Name="InfoStatusBraItem" Content="{Binding DebugInfo}"
+            <Grid Grid.Column="8">
+                <StatusBar x:Name="InfoStatus" HorizontalAlignment="Left">
+                    <StatusBarItem x:Name="InfoStatusBraItem" Content="{Binding DebugInfo}"
                                Style="{StaticResource SBStatusBarItem}" FontSize="10.5"/>
-                        </StatusBar>
-                    </Border>
-                </Border>
-
+                </StatusBar>
             </Grid>
             <!--发送文件状态-->
-            <Grid Grid.Column="4">
+            <Grid Grid.Column="8">
                 <ProgressBar x:Name="SendFileProgressBar"
                          Margin="6,6"
-                         Background="#f0f0f0" BorderBrush="White" Foreground="LightGreen"
-                         Visibility="{Binding HelpModel.StatusBarProgressBarVisibility}"
-                         Value="{Binding HelpModel.StatusBarProgressBarValue}"
-                         IsIndeterminate="{Binding HelpModel.StatusBarProgressBarIsIndeterminate}" FontSize="10.5" VerticalAlignment="Center" Padding="0,0,0,2"/>
+                         BorderBrush="White" Foreground="LightGreen"
+                         Visibility="{Binding SendModel.StatusBarProgressBarVisibility}"
+                         Value="{Binding SendModel.StatusBarProgressBarValue}"
+                         IsIndeterminate="{Binding SendModel.StatusBarProgressBarIsIndeterminate}" FontSize="10.5" VerticalAlignment="Center" Padding="0,0,0,2"/>
             </Grid>
         </Grid>
 
         <!--ALL工作区-->
         <Grid x:Name="WorkGrid">
             <Grid.RowDefinitions>
-                <RowDefinition Height="1*"/>
+                <RowDefinition Height="200*"/>
                 <!--<RowDefinition Height="32.52"/>-->
                 <RowDefinition Height="170"/>
             </Grid.RowDefinitions>
@@ -308,16 +309,13 @@
             <!--串口配置区和数据发送区-->
             <Grid x:Name="SerialPortGrid" Grid.Row="1" Grid.RowSpan="2" Margin="5,0,5,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="385"/>
+                    <ColumnDefinition Width="380"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="170"/>
-                </Grid.RowDefinitions>
 
                 <!--串口配置区-->
-                <GroupBox x:Name="ConfigGroupPort" Header="串口/接收" Grid.Row="0" Grid.Column="0"
-                          Margin="4,0,2,2"
+                <GroupBox x:Name="ConfigGroupPort" Header="串口设置" Grid.Row="0" Grid.Column="0"
+                          Margin="2,0,1,2"
                           BorderBrush="Gray"
                           Visibility="{Binding HelpModel.ViewVisibility}">
                     <Grid x:Name="ConfigGrid" >
@@ -330,18 +328,18 @@
                             <RowDefinition Height="1*"/>
                             <RowDefinition Height="1*"/>
                             <RowDefinition Height="Auto"/>
-                            <!--<RowDefinition Height="1*"/>-->
+
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="25"/>
                                 <ColumnDefinition Width="175"/>
-                                <ColumnDefinition Width="30"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="65"/>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="ComTextBox" Text="端口：" Grid.Column="0"
+                            <TextBlock x:Name="ComTextBox" Text="端口" Grid.Column="0"
                                            Style="{StaticResource ConfigTextBlock}"/>
                             <ComboBox x:Name="ComComboBox" Grid.Column="1"
                                           ItemsSource="{Binding SerialPortModel.PortItemsSource}"
@@ -351,89 +349,62 @@
                             <Ellipse x:Name="OnOffElipse" Fill="{Binding SerialPortModel.Brush}"
                                          Grid.Column="2"
                                          Style="{StaticResource ConfigEilipse}"/>
-                            <Button x:Name="OnOffButton" Content="{Binding SerialPortModel.OpenClose}"
+                            <Button x:Name="OnOffButton" Foreground="#13227a" Content="{Binding SerialPortModel.OpenClose}"
                                         Grid.Column="3"
                                         Style="{DynamicResource ConfigButton}"
-                                        Click="OpenCloseSP"/>
+                                        Click="OpenCloseSP" FontWeight="Bold"/>
                             <Button x:Name="ClearReceButton" Content="清空接收" Grid.Column="4"
                                     Style="{DynamicResource AssistButton}" 
-                                    Click="ClearReceData" Margin="8,0,0,0" >
+                                    Click="ClearReceData" Margin="8,0,0,0" FontWeight="Normal" >
                             </Button>
                         </Grid>
                         <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="90"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="38"/>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="55"/>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="BaudTextBox" Text="波特率：" Grid.Column="0"
-                                           Style="{StaticResource ConfigTextBlock}"/>
+                            <TextBlock x:Name="BaudTextBox" Text="波特率" Grid.Column="0"
+                                           Style="{StaticResource ConfigTextBlock}" FontSize="12"/>
                             <ComboBox x:Name="BaudComboBox" Grid.Column="1"
                                           ItemsSource="{Binding SerialPortModel.BaudRateItemsSource}"
                                           SelectedItem="{Binding SerialPortModel.BaudRate}"
                                           Style="{DynamicResource ConfigComboBox}"
-                                          IsEnabled="{Binding SerialPortModel.BaudRateEnable}"/>
-                            <TextBlock x:Name="DcdTextBlock" Text="DCD" Grid.Row="0" Grid.Column="2"
-                                       Margin="3,0,0,0"
-                                       Style="{StaticResource HDTextBlock}"/>
-                            <Ellipse x:Name="DcdElipse" Fill="{Binding SerialPortModel.DcdBrush}" Grid.Row="0" Grid.Column="3"
-                                     Style="{StaticResource HDEilipse}"/>
-                            <TextBlock x:Name="CtsTextBlock" Text="CTS" Grid.Row="0" Grid.Column="4"
-                                       Margin="2,0,0,0"
-                                       Style="{StaticResource HDTextBlock}"/>
-                            <Ellipse x:Name="CtsElipse" Fill="{Binding SerialPortModel.CtsBrush}" Grid.Row="0" Grid.Column="5"
-                                     Style="{StaticResource HDEilipse}" HorizontalAlignment="Center"/>
-                            <TextBlock x:Name="DsrTextBlock" Text="DSR" Grid.Row="0" Grid.Column="6"
-                                       Margin="2,0,0,0"
-                                       Style="{StaticResource HDTextBlock}"/>
-                            <Ellipse x:Name="DsrElipse" Fill="{Binding SerialPortModel.DsrBrush}" Grid.Row="0" Grid.Column="7"
-                                     Style="{StaticResource HDEilipse}"/>
-                        </Grid>
-
-
-                        <Grid x:Name="HoldingGrid" Grid.Row="2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="45"/>
-                                <ColumnDefinition Width="40"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="1*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="DataTextBox" Text="数据位：" Grid.Column="0"
-                                           Style="{StaticResource ConfigTextBlock}"/>
-                            <ComboBox x:Name="DataComboBox" Grid.Column="1"
+                                          IsEnabled="{Binding SerialPortModel.BaudRateEnable}" FontSize="11" Margin="2,0,2,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="DataTextBox" Text="数据位" Grid.Column="2"
+                                           Style="{StaticResource ConfigTextBlock}" FontSize="12" FontWeight="Normal"/>
+                            <ComboBox x:Name="DataComboBox" Grid.Column="3"
                                           ItemsSource="{Binding SerialPortModel.DataBitsItemsSource}"
                                           SelectedItem="{Binding SerialPortModel.DataBits}"
                                           Style="{DynamicResource ConfigComboBox}"
-                                          IsEnabled="{Binding SerialPortModel.DataBitsEnable}"/>
-                            <TextBlock x:Name="StopTextBox" Text="停止位：" Grid.Column="2" HorizontalAlignment="Right"
-                                           Style="{StaticResource ConfigTextBlock}"/>
-                            <ComboBox x:Name="StopConboBox" Grid.Column="3"
+                                          IsEnabled="{Binding SerialPortModel.DataBitsEnable}" FontSize="11" Margin="2,0,2,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="StopTextBox" Text="停止位" Grid.Column="4"
+                                           Style="{StaticResource ConfigTextBlock}" FontSize="12"/>
+                            <ComboBox x:Name="StopConboBox" Grid.Column="5"
                                           ItemsSource="{Binding SerialPortModel.StopBitsItemsSource}"
                                           SelectedItem="{Binding SerialPortModel.StopBits}"
                                           Style="{DynamicResource ConfigComboBox}"
-                                          IsEnabled="{Binding SerialPortModel.StopBitsEnable}"/>
-                            <TextBlock x:Name="ParityTextBox" Text="校验位：" Grid.Column="4"  HorizontalAlignment="Right"
-                                           Style="{StaticResource ConfigTextBlock}"/>
-                            <ComboBox x:Name="ParityComboBox" Grid.Column="5"
+                                          IsEnabled="{Binding SerialPortModel.StopBitsEnable}" FontSize="11" Margin="2,0,2,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="ParityTextBox" Text="校验位" Grid.Column="6"
+                                           Style="{StaticResource ConfigTextBlock}" FontSize="12"/>
+                            <ComboBox x:Name="ParityComboBox" Grid.Column="7"
                                           ItemsSource="{Binding SerialPortModel.ParityItemsSource}"
                                           SelectedItem="{Binding SerialPortModel.Parity}"
                                           Style="{DynamicResource ConfigComboBox}"
-                                          IsEnabled="{Binding SerialPortModel.ParityEnable}"/>
-
+                                          IsEnabled="{Binding SerialPortModel.ParityEnable}" FontSize="11" Margin="2,0,2,0"/>
                         </Grid>
 
-                        <Grid Grid.Row="3">
+                        <Grid Grid.Row="2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="65"/>
-                                <ColumnDefinition Width="65"/>
                                 <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="1*"/>
                                 <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
                             <CheckBox x:Name="TimeStampMenuItem" Content="时间戳" Grid.Column="0"
@@ -442,19 +413,50 @@
                             <CheckBox x:Name="HexReceCheckBox" Content="Hex接收" Grid.Column="1"
                                       Style="{StaticResource AssistCheckBox}"
                                       IsChecked="{Binding RecvModel.HexRecv}" HorizontalAlignment="Center"/>
-                            <CheckBox x:Name="SaveReceCheckBox" Content="保存文件" Grid.Column="2"
-                                      Style="{StaticResource AssistCheckBox}"
-                                      IsChecked="{Binding SaveRecv}" HorizontalAlignment="Right"/>
+                            <CheckBox x:Name="HexSendCheckBox" Content="Hex发送" Grid.Column="2"
+                                          Style="{StaticResource AssistCheckBox}"
+                                          IsChecked="{Binding HexSend}" />
+                            <CheckBox x:Name="CtrlLfSendCheckBox" Content="加回车换行" Grid.Column="3"
+                                          Margin="2,0,0,0"
+                                          Style="{StaticResource AssistCheckBox}"
+                                          Click="CrLfMenuItem_Click"
+                                          IsChecked="{Binding SendModel.CrLfEnable}" />
+                            <Button x:Name="ClearSendButton" Content="清空发送"  Grid.Column="4"
+                                        Style="{StaticResource AssistButton}"
+                                        Click="ClearSendData" HorizontalAlignment="Stretch" Margin="10,0,0,0"/>
 
+                        </Grid>
+                        <Grid Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="SaveReceCheckBox" Content="保存文件" Grid.Column="0"
+                                      Style="{StaticResource AssistCheckBox}"
+                                      IsChecked="{Binding SaveRecv}" HorizontalAlignment="Left"/>
+                            <CheckBox x:Name="AutoSendCheckBox" Content="自动发送(ms)" Grid.Column="1"
+                                          Margin="0,0,0,0"
+                                          Style="{StaticResource AssistCheckBox}"
+                                          IsChecked="{Binding AutoSend}"/>
+                            <TextBox x:Name="AutoSendNumTextBox" Text="{Binding SendModel.AutoSendNum}" Grid.Column="2" Height="25"
+                                         Style="{DynamicResource AutoSendNumTextBox}"
+                                         input:InputMethod.IsInputMethodEnabled="False"
+                                         PreviewTextInput="AutoSendNumTextBox_PreviewTextInput" Margin="2,0,0,0"/>
+                            <Button x:Name="SendFileButton" Content="发送文件" Grid.Column="3"
+                                        Style="{StaticResource AssistButton}"
+                                        Click="SendFile" HorizontalAlignment="Stretch" Margin="10,0,0,0"/>
                         </Grid>
 
                         <Grid Grid.Row="4">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="92*"/>
+                                <ColumnDefinition Width="233*"/>
                                 <ColumnDefinition Width="40"/>
                             </Grid.ColumnDefinitions>
 
-                            <Grid Background="#f0f0f0" Grid.Column="0">
+                            <Grid Background="#f0f0f0" Grid.Column="0" Grid.ColumnSpan="2">
                                 <Border BorderBrush="Gainsboro" BorderThickness="0,0,2,2">
                                     <Border BorderBrush="Gray" BorderThickness="2,2,0,0" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.CanContentScroll="True" UseLayoutRounding="True" Focusable="True">
                                         <TextBlock  FontSize="11" HorizontalAlignment="Left" ScrollViewer.HorizontalScrollBarVisibility="Auto" TextWrapping="WrapWithOverflow">
@@ -466,7 +468,7 @@
                                 </Border>
                             </Grid>
 
-                            <Button x:Name="SaveReceButton" Content="..."  Grid.Column="1"
+                            <Button x:Name="SaveReceButton" Content="..."  Grid.Column="2"
                                     Style="{StaticResource AssistButton}"
                                     Click="SaveRecvPath" Margin="5,0,0,0">
                                 <Button.Effect>
@@ -480,7 +482,7 @@
                 <!--数据发送区-->
                 <GroupBox x:Name="SendDataGroupBox" Grid.Column="1"
                           Header="发送"
-                          Margin="5,0,4,3"
+                          Margin="1,0,2,2"
                           BorderBrush="Gray">
 
                     <Grid x:Name="SendDataGrid" >
@@ -488,62 +490,58 @@
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="100"/>
                             <RowDefinition Height="1*"/>
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="220"/>
                             </Grid.ColumnDefinitions>
-                            <CheckBox x:Name="HexSendCheckBox" Content="Hex发送" Grid.Column="0"
-                                      Style="{StaticResource AssistCheckBox}"
-                                      IsChecked="{Binding HexSend}" />
-                            <CheckBox x:Name="CtrlLfSendCheckBox" Content="加回车换行" Grid.Column="1"
-                                      Margin="5,0,0,0"
-                                      Style="{StaticResource AssistCheckBox}"
-                                      Click="CrLfMenuItem_Click"
-                                      IsChecked="{Binding SendModel.CrLfEnable}" />
-                            <CheckBox x:Name="AutoSendCheckBox" Content="自动发送(ms)" Grid.Column="2"
-                                      Margin="5,0,0,0"
-                                      Style="{StaticResource AssistCheckBox}"
-                                      IsChecked="{Binding AutoSend}"/>
-                            <TextBox x:Name="AutoSendNumTextBox" Text="{Binding SendModel.AutoSendNum}" Grid.Column="3" Height="25"
-                                     Style="{DynamicResource AutoSendNumTextBox}"
-                                     input:InputMethod.IsInputMethodEnabled="False"
-                                     PreviewTextInput="AutoSendNumTextBox_PreviewTextInput"/>
+                            <Grid Grid.Column="0">
+                                <TextBlock Foreground="#13227a" Text="常用命令" Style="{StaticResource ConfigTextBlock}" FontSize="12" TextWrapping="Wrap" FontWeight="Bold" VerticalAlignment="Top"/>
+                            </Grid>
+                            <Grid Grid.Column="1">
+                                <ListView x:Name="CommonCmdDataList" ItemsSource="{Binding Path=CommonCmds}" SelectionChanged="CommonCmd_SelectionChanged" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="{x:Type ListViewItem}">
+                                            <Setter Property="ContextMenu" Value="{StaticResource CommandCmdContextMenu}"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path=Item}" >
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                            <Grid Grid.Column="2">
+                                <TextBlock Foreground="#13227a" Text="历史命令" Style="{StaticResource ConfigTextBlock}" FontSize="12" TextWrapping="Wrap" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="2,0,0,0"/>
+                            </Grid>
+                            <Grid Grid.Column="3">
 
+                                <ListView x:Name="HistoryCmdDataList" ItemsSource="{Binding Path=RescentCmds}" SelectionChanged="HistoryCmd_SelectionChanged" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="{x:Type ListViewItem}">
+                                            <Setter Property="ContextMenu" Value="{StaticResource RescentCmdContextMenu}"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Path=Item}" >
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
                         </Grid>
-
                         <Grid Grid.Row="1">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="75"/>
-                                <ColumnDefinition Width="75"/>
-                                <ColumnDefinition Width="75"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button x:Name="ClearSendButton" Content="清空发送"  Grid.Column="0"
-                                    Style="{StaticResource AssistButton}"
-                                    Margin="0,3,0,0"
-                                    Click="ClearSendData"/>
-
-                            <Button x:Name="ClearCountButton" Content="计数清零"  Grid.Column="1"
-                                    Style="{StaticResource AssistButton}"
-                                    Margin="10,3,0,0"
-                                    Click="ClearCount"/>
-                            <Button x:Name="SendFileButton" Content="发送文件" Grid.Column="2"
-                                    Style="{StaticResource AssistButton}"
-                                    Margin="10,3,0,0"
-                                    Click="SendFile"/>
-
-                        </Grid>
-                        <Grid Grid.Row="2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="75"/>
+                                <ColumnDefinition Width="60"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid Grid.Column="0">

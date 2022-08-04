@@ -1,11 +1,27 @@
 ﻿using MetaCom.Interfaces;
+using MetaCom.Models;
 using MetaCom.ViewModels;
+
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+//using System.Windows.Forms;
 using System.Windows.Input;
+using System.Windows.Threading;
+using System.Xml.Linq;
+using System.Xml.Serialization;
+using static MetaCom.Models.ConfigModel;
+//using System.Windows;
+//using System.Windows.Controls;
+//using System.Windows.Forms;
+//using System.Windows.Input;
 
 namespace MetaCom.Views
 {
@@ -13,15 +29,42 @@ namespace MetaCom.Views
     {
         internal MainWindowViewModel mainWindowViewModel = null;
 
+        public class Command : INotifyPropertyChanged
+        {
+            public event PropertyChangedEventHandler PropertyChanged;
+            private string _CmdStr;
+            public string CmdStr 
+            {
+                get { return _CmdStr; }
+                set
+                { 
+                    _CmdStr = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CmdStr"));
+                }
+            }
+            public override string ToString()
+            {
+                return this.CmdStr;
+            }
+            public Command()
+            {
+                _CmdStr = CmdStr;
+            }
+        }
+ 
         public MainWindow()
         {
             InitializeComponent();
 
             Height = 700;
-            Width = Height / 0.9;
+            Width = Height / 0.8;
 
             mainWindowViewModel = new MainWindowViewModel();
+
             DataContext = mainWindowViewModel;
+            CommonCmdDataList.ItemsSource = mainWindowViewModel.ConfigModel.CommonCmds;
+            HistoryCmdDataList.ItemsSource = mainWindowViewModel.ConfigModel.RescentCmds;
+
         }
 
         #region Menu Mouse Support
@@ -242,6 +285,7 @@ namespace MetaCom.Views
         /// <param name="e"></param>
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
+            mainWindowViewModel.SaveConfig();
             Close();
             Application.Current.Shutdown();
         }
@@ -257,7 +301,15 @@ namespace MetaCom.Views
         #region 发送
         private async void Send(object sender, RoutedEventArgs e)
         {
+            if (SendTextBox.Text != "")
+            {
+                mainWindowViewModel.SaveRescentCmd(SendTextBox.Text);
+                HistoryCmdDataList.SelectedIndex = mainWindowViewModel.ConfigModel.RescentCmds.Count;
+                HistoryCmdDataList.ScrollIntoView(HistoryCmdDataList.SelectedItem);
+            }
+
             await mainWindowViewModel.SendAsync().ConfigureAwait(false);
+
         }
         #endregion
 
@@ -381,6 +433,77 @@ namespace MetaCom.Views
             GC.SuppressFinalize(this);/* this: MetaTerm.Views.MainWindow */
         }
         #endregion
+
+        private void CommonCmd_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                var selected = (CommonCmd)((ListView)sender).SelectedItem;
+                if (selected != null)
+                {
+                    string cmd = selected.Item;
+                    if (cmd != null)
+                    {
+                        mainWindowViewModel.SendCmd(cmd);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                mainWindowViewModel.DebugInfo = exc.Message.Replace("\r\n", "");
+            }
+        }
+
+        private void HistoryCmd_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                var selected = (RescentCmd)((ListView)sender).SelectedItem;
+                if (selected != null)
+                {
+                    string cmd = selected.Item;
+                    if (cmd != null)
+                    {
+                        mainWindowViewModel.SendCmd(cmd);
+                    }
+                }
+            }
+            catch (Exception excp)
+            {
+                mainWindowViewModel.DebugInfo = excp.Message.Replace("\r\n", "");
+            }
+        }
+
+        private async void AddToCommonCmdList(object sender, RoutedEventArgs e)
+        {
+            string cmd = "";
+            int num = HistoryCmdDataList.SelectedIndex;//选中的listview的行 
+            cmd = mainWindowViewModel.ConfigModel.RescentCmds[num].Item;
+            mainWindowViewModel.SaveCommonCmd(cmd);
+            CommonCmdDataList.SelectedIndex = mainWindowViewModel.ConfigModel.CommonCmds.Count - 1;
+            CommonCmdDataList.ScrollIntoView(CommonCmdDataList.SelectedItem);
+        }
+
+        private void DelFromHistoryCmdList(object sender, RoutedEventArgs e)
+        {
+            int num = HistoryCmdDataList.SelectedIndex; //选中的listview的行  
+            HistoryCmdDataList.ItemsSource = null;
+            if (mainWindowViewModel.ConfigModel.RescentCmds.Count != 0)
+                mainWindowViewModel.ConfigModel.RescentCmds.RemoveAt(num);   //删除listview的选中的行  
+            HistoryCmdDataList.ItemsSource = mainWindowViewModel.ConfigModel.RescentCmds;
+        }
+        private void DelAllCmdList(object sender, RoutedEventArgs e)
+        {
+            mainWindowViewModel.ConfigModel.RescentCmds.Clear();
+        }
+        private void DelFromCommonCmdList(object sender, RoutedEventArgs e)
+        {
+            int num = CommonCmdDataList.SelectedIndex; //选中的listview的行  
+            CommonCmdDataList.ItemsSource = null;
+            if (mainWindowViewModel.ConfigModel.CommonCmds.Count != 0)
+                mainWindowViewModel.ConfigModel.CommonCmds.RemoveAt(num);   //删除listview的选中的行  
+            CommonCmdDataList.ItemsSource = mainWindowViewModel.ConfigModel.CommonCmds;
+        }
     }
 
     #region RecvTextBox Append Text Support

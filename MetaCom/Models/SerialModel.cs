@@ -595,6 +595,7 @@ namespace MetaCom.Models
                 var name = property.GetPropertyValue("Name");
                 if (name != null && name.ToString().Contains(PortName))
                 {
+                   // var portInfo = new SerialPortInfo(property);
                     Console.WriteLine("Port Name:    " + name);
                     Console.WriteLine("Port description:    " + property.GetPropertyValue("Description"));
                     return property.GetPropertyValue("Description").ToString();

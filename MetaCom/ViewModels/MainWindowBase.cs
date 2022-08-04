@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace MetaCom.ViewModels
 {
-    internal class MainWindowBase : INotifyPropertyChanged
+    public class MainWindowBase : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
